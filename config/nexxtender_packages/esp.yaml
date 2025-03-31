@@ -14,7 +14,5 @@ esphome:
   min_version: 2024.2.0
   name: ${device_name}
   friendly_name: ${friendly_name}
-  platformio_options:
-    build_flags: "-I .esphome/packages/**/config"
   includes:
     - .esphome/packages/caa06908/config/nexxtender_packages/nexxtender.h
