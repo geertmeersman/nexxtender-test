@@ -11,7 +11,9 @@ esp32:
       CONFIG_BT_GATTC_NOTIF_REG_MAX: "32"
 
 external_components:
-  - source: auto
+  - source:
+      type: local
+      path: ".esphome/packages/*/config"
 
 esphome:
   min_version: 2024.2.0
