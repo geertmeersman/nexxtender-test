@@ -16,6 +16,5 @@ esphome:
   friendly_name: ${friendly_name}
   platformio_options:
     build_flags: "-I .esphome/packages/**/config"
-
-includes:
-  - nexxtender_packages/nexxtender.h
+  includes:
+    - .esphome/packages/caa06908/config/nexxtender_packages/nexxtender.h
