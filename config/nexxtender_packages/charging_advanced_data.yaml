@@ -1,0 +1,121 @@
+substitutions:
+  ble_uuid_charging_advanced_characteristic: ${ble_uuid_prefix}db
+  charging_advanced_prefix: Charging Advanced
+  charging_advanced_id_prefix: charging_advanced
+  charging_advanced_update_interval: 60s
+  charging_mode_eco_mono_threshold: "8" # Single phase (6A + 2 margin)
+  charging_mode_eco_bi_threshold: "14" # Bi-phase (12A + 2 margin)
+  charging_mode_eco_tri_threshold: "20" # Tri-phase (18A + 2 margin)
+
+globals:
+  - id: g_${charging_advanced_id_prefix}_timestamp
+    type: int
+  - id: g_${charging_advanced_id_prefix}_i_available
+    type: int
+  - id: g_${charging_advanced_id_prefix}_grid_power
+    type: int
+  - id: g_${charging_advanced_id_prefix}_car_power
+    type: int
+
+sensor:
+  - platform: template
+    name: "${charging_advanced_prefix} Timestamp"
+    id: ${charging_advanced_id_prefix}_timestamp
+    icon: mdi:clock-time-eight
+    device_class: timestamp
+    accuracy_decimals: 0
+    disabled_by_default: true
+    update_interval: ${charging_advanced_update_interval}
+    lambda: |-
+      return id(g_${charging_advanced_id_prefix}_timestamp);
+  - platform: template
+    name: "Available capacity"
+    id: ${charging_advanced_id_prefix}_i_available
+    icon: mdi:current-ac
+    device_class: current
+    unit_of_measurement: A
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${charging_advanced_update_interval}
+    lambda: |-
+      return id(g_${charging_advanced_id_prefix}_i_available);
+  - platform: template
+    name: "Grid Power"
+    id: ${charging_advanced_id_prefix}_grid_power
+    icon: mdi:sigma
+    device_class: power
+    unit_of_measurement: W
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${charging_advanced_update_interval}
+    lambda: |-
+      return id(g_${charging_advanced_id_prefix}_grid_power);
+  - platform: integration
+    name: "${charging_advanced_prefix} Grid Energy"
+    sensor: ${charging_advanced_id_prefix}_grid_power
+    time_unit: h
+    unit_of_measurement: Wh
+    state_class: total
+    device_class: energy
+    icon: mdi:transmission-tower
+  - platform: template
+    name: "Car Power"
+    id: ${charging_advanced_id_prefix}_car_power
+    icon: mdi:sigma
+    device_class: power
+    unit_of_measurement: kW
+    state_class: measurement
+    update_interval: ${charging_advanced_update_interval}
+    accuracy_decimals: 2
+    filters:
+      - lambda: return x / 1000;
+    lambda: |-
+      return id(g_${charging_advanced_id_prefix}_car_power);
+
+text_sensor:
+  - platform: template
+    name: "Car Power Mode"
+    id: ${charging_advanced_id_prefix}_car_power_mode
+    icon: mdi:speedometer
+    update_interval: ${charging_advanced_update_interval}
+    lambda: |-
+      int power = id(${charging_car_id_prefix}_current)->state;
+      if (power == 0) { return std::string("Not charging"); }
+
+      int mode_eco_threshold;
+      int phase_count = id(${charging_basic_id_prefix}_phase_count)->state;
+
+      switch (phase_count) {
+              case 1:
+                  mode_eco_threshold = $charging_mode_eco_mono_threshold;
+                  break;
+              case 2:
+                  mode_eco_threshold = $charging_mode_eco_bi_threshold;
+                  break;
+              case 3:
+                  mode_eco_threshold = $charging_mode_eco_tri_threshold;
+                  break;
+              default:
+                  mode_eco_threshold = 0;
+          }
+
+      if (power < mode_eco_threshold) { return std::string("Eco"); }
+      return std::string("Max");
+
+  - platform: ble_client
+    id: ${device_name}_charging_advanced_data
+    internal: true
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_receive_service}
+    characteristic_uuid: ${ble_uuid_charging_advanced_characteristic}
+    update_interval: 15s
+    on_value:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          logd_x("${device_name}_charging_advanced_data", x);
+
+          id(g_${charging_advanced_id_prefix}_timestamp) = getInt(x, 0);
+          id(g_${charging_advanced_id_prefix}_i_available) = getShort(x, 4);
+          id(g_${charging_advanced_id_prefix}_grid_power) = getSignedInt(x, 6);
+          id(g_${charging_advanced_id_prefix}_car_power) = getSignedInt(x, 10);

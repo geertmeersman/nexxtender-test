@@ -1,0 +1,77 @@
+substitutions:
+  ble_uuid_device_information_service: 180a
+  ble_uuid_device_information_model_number: 2a24
+  ble_uuid_device_information_serial_number: 2a25
+  ble_uuid_device_information_firmware_revision: 2a26
+  ble_uuid_device_information_hardware_revision: 2a27
+  device_information_id_prefix: device_information
+  device_information_update_interval: 60s
+
+text_sensor:
+  - platform: ble_client
+    id: ${device_information_id_prefix}_model_number
+    disabled_by_default: true
+    name: "Model Number"
+    icon: mdi:numeric
+    entity_category: diagnostic
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_device_information_service}
+    characteristic_uuid: ${ble_uuid_device_information_model_number}
+    notify: true
+    update_interval: ${device_information_update_interval}
+    on_notify:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          id(${device_information_id_prefix}_model_number).publish_state(x);
+          logd_s("${device_information_id_prefix}_model_number", x);
+  - platform: ble_client
+    id: ${device_information_id_prefix}_serial_number
+    disabled_by_default: true
+    name: "Serial Number"
+    icon: mdi:numeric
+    entity_category: diagnostic
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_device_information_service}
+    characteristic_uuid: ${ble_uuid_device_information_serial_number}
+    notify: true
+    update_interval: ${device_information_update_interval}
+    on_notify:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          id(${device_information_id_prefix}_serial_number).publish_state(x);
+          logd_s("${device_information_id_prefix}_serial_number", x);
+  - platform: ble_client
+    id: ${device_information_id_prefix}_firmware_revision
+    name: "Firmware Revision"
+    icon: mdi:file-certificate
+    entity_category: diagnostic
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_device_information_service}
+    characteristic_uuid: ${ble_uuid_device_information_firmware_revision}
+    notify: true
+    update_interval: ${device_information_update_interval}
+    on_notify:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          id(${device_information_id_prefix}_firmware_revision).publish_state(x);
+          logd_s("${device_information_id_prefix}_firmware_revision", x);
+  - platform: ble_client
+    id: ${device_information_id_prefix}_hardware_revision
+    disabled_by_default: true
+    name: "Hardware Revision"
+    icon: mdi:file-certificate
+    entity_category: diagnostic
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_device_information_service}
+    characteristic_uuid: ${ble_uuid_device_information_hardware_revision}
+    notify: true
+    update_interval: ${device_information_update_interval}
+    on_notify:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          id(${device_information_id_prefix}_hardware_revision).publish_state(x);
+          logd_s("${device_information_id_prefix}_hardware_revision", x);

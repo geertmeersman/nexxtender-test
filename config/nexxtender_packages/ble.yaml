@@ -1,0 +1,72 @@
+substitutions:
+  ble_uuid_prefix: fd47416a-95fb-4206-88b5-b4a8045f75
+  ble_uuid_receive_service: ${ble_uuid_prefix}c1
+
+globals:
+  - id: g_ble_client_manual_disconnect
+    type: int
+    initial_value: "0"
+
+esp32_ble:
+  io_capability: keyboard_only
+
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: !secret nexxtender_mac
+    id: ${device_name}_ble_client_id
+    on_connect:
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_client_lambda", "Connected to BLE device");
+            id(${device_name}_ble_client_id)->pair();
+            id(ble_client_connectivity).publish_state(true);
+            id(g_${generic_data_id_prefix}_config_init) = false;
+        - esp32_ble_tracker.stop_scan:
+    on_disconnect:
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_client_lambda", "Disconnected from BLE device");
+            id(ble_client_connectivity).publish_state(false);
+        - esp32_ble_tracker.start_scan:
+    on_passkey_notification:
+      then:
+        - logger.log:
+            format: "Enter this passkey on your BLE device: %06d"
+            args: [passkey]
+    on_passkey_request:
+      then:
+        - logger.log: "Authenticating with passkey"
+        - ble_client.passkey_reply:
+            id: ${device_name}_ble_client_id
+            passkey: !secret nexxtender_passkey
+
+binary_sensor:
+  - platform: template
+    name: BLE Client
+    id: ble_client_connectivity
+    publish_initial_state: true
+    device_class: connectivity
+    icon: mdi:check-network-outline
+    entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart Nexxtender ESP"
+    icon: "mdi:restart"
+    entity_category: diagnostic
+
+switch:
+  - platform: ble_client
+    ble_client_id: ${device_name}_ble_client_id
+    name: BLE Client
+    icon: mdi:bluetooth-transfer
+    entity_category: diagnostic
+    on_turn_on:
+      - globals.set:
+          id: g_ble_client_manual_disconnect
+          value: "0"
+    on_turn_off:
+      - globals.set:
+          id: g_ble_client_manual_disconnect
+          value: "1"

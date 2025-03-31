@@ -1,0 +1,136 @@
+substitutions:
+  ble_uuid_charging_basic_characteristic: ${ble_uuid_prefix}cf
+  charging_basic_prefix: Charging
+  charging_basic_id_prefix: charging_basic
+  charging_basic_update_interval: 60s
+
+globals:
+  - id: g_${charging_basic_id_prefix}_seconds
+    type: int
+  - id: g_${charging_basic_id_prefix}_energy
+    type: int
+  - id: g_${charging_basic_id_prefix}_phase_count
+    type: int
+  - id: g_${charging_basic_id_prefix}_discriminator
+    type: std::string
+  - id: g_${charging_basic_id_prefix}_status
+    type: std::string
+  - id: g_${charging_basic_id_prefix}_status_id
+    type: int
+
+sensor:
+  - platform: template
+    name: "${charging_basic_prefix} Seconds"
+    id: ${charging_basic_id_prefix}_seconds
+    icon: mdi:timelapse
+    device_class: duration
+    unit_of_measurement: s
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${charging_basic_update_interval}
+    lambda: |-
+      return id(g_${charging_basic_id_prefix}_seconds);
+  - platform: template
+    name: "Energy"
+    id: ${charging_basic_id_prefix}_energy
+    icon: mdi:flash
+    device_class: energy
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    accuracy_decimals: 2
+    filters:
+      - lambda: return x / 1000;
+    update_interval: ${charging_basic_update_interval}
+    lambda: |-
+      return id(g_${charging_basic_id_prefix}_energy);
+  - platform: template
+    name: "Charging Phase Count"
+    id: ${charging_basic_id_prefix}_phase_count
+    icon: mdi:counter
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${charging_basic_update_interval}
+    lambda: |-
+      return id(g_${charging_basic_id_prefix}_phase_count);
+
+text_sensor:
+  - platform: template
+    name: "Discriminator"
+    id: ${charging_basic_id_prefix}_discriminator
+    icon: mdi:battery-charging-100
+    update_interval: ${charging_basic_update_interval}
+    lambda: |-
+      return id(g_${charging_basic_id_prefix}_discriminator);
+  - platform: template
+    name: "Status"
+    id: ${charging_basic_id_prefix}_status
+    icon: mdi:ev-station
+    update_interval: ${charging_basic_update_interval}
+    lambda: |-
+      return id(g_${charging_basic_id_prefix}_status);
+  - platform: ble_client
+    id: ${device_name}_charging_basic_data
+    internal: true
+    ble_client_id: ${device_name}_ble_client_id
+    service_uuid: ${ble_uuid_receive_service}
+    characteristic_uuid: ${ble_uuid_charging_basic_characteristic}
+    notify: true
+    update_interval: never
+    on_notify:
+      then:
+        lambda: |-
+          if (x.empty()) { return; }
+          logd_x("${device_name}_charging_basic_data", x);
+
+          // Declare variables outside the switch-case block
+          String value_string;
+          int value;
+
+          id(g_${charging_basic_id_prefix}_seconds) = getShort(x, 0);;
+
+          // Publish the discriminator state
+          switch (getByte(x, 2)) {
+              case 1:
+                  value_string = "Started";
+                  break;
+              case 2:
+                  value_string = "Charging";
+                  break;
+              case 3:
+                  value_string = "Stopped";
+                  break;
+              default:
+                  value_string = "Unknown";
+          }
+          id(g_${charging_basic_id_prefix}_discriminator) = value_string.c_str();;
+          id(${charging_basic_id_prefix}_discriminator).publish_state(value_string.c_str());
+
+          switch (static_cast<char>(getByte(x, 3))) {
+              case 'B':
+                  value_string = "Plugged";
+                  value = 1;
+                  break;
+              case 'C':
+              case 'D':
+                  value_string = "Charging";
+                  value = 2;
+                  break;
+              case 'E':
+                  value_string = "Fault";
+                  value = 3;
+                  break;
+              default:
+                  value_string = "Unplugged";
+                  value = 4;
+                  break;
+          }
+          id(g_${charging_basic_id_prefix}_status_id) = value;
+          id(g_${charging_basic_id_prefix}_status) = value_string.c_str();
+          id(${charging_basic_id_prefix}_status).publish_state(value_string.c_str());
+
+          value = getInt(x, 8);
+          id(g_${charging_basic_id_prefix}_energy) = value;
+
+          value = getByte(x, 13);
+          id(g_${charging_basic_id_prefix}_phase_count) = value;
+          id(${charging_basic_id_prefix}_phase_count).publish_state(value);

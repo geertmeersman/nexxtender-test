@@ -1,0 +1,18 @@
+substitutions:
+  device_name: nexxtender
+  friendly_name: Nexxtender
+
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      CONFIG_BT_GATTC_NOTIF_REG_MAX: "32"
+
+esphome:
+  min_version: 2024.2.0
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  includes:
+    - config/nexxtender_packages/nexxtender.h

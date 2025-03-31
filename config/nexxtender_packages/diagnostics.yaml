@@ -1,0 +1,159 @@
+substitutions:
+  diagnostics_update_interval: 60s
+
+# ----------------------------------------------------------------
+# Global variables
+# ----------------------------------------------------------------
+globals:
+  - id: boot_counter
+    type: int
+    restore_value: yes
+    initial_value: "0"
+
+## ---------------------------------------------------
+## binary sensors
+## ---------------------------------------------------
+binary_sensor:
+  - platform: status
+    name: Status
+    entity_category: diagnostic
+    disabled_by_default: true
+
+## ---------------------------------------------------
+## switches
+## ---------------------------------------------------
+switch:
+  - platform: template
+    name: Reset boot counter
+    turn_on_action:
+      then:
+        - lambda: |-
+            id(boot_counter) = 0;
+            id(bootcounter).update();
+        - logger.log: ${device_name} reset boot counter o.k!
+    entity_category: diagnostic
+    disabled_by_default: true
+
+## ---------------------------------------------------
+## all default sensors
+## ---------------------------------------------------
+sensor:
+  - platform: template
+    name: Boot counter
+    id: bootcounter
+    accuracy_decimals: 0
+    lambda: |-
+      return (id(boot_counter));
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: uptime
+    name: Uptime Sensor
+    id: uptime_sensor
+    icon: mdi:clock-start
+    update_interval: ${diagnostics_update_interval}
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? String(days) + "d " : "") +
+                (hours ? String(hours) + "h " : "") +
+                (minutes ? String(minutes) + "m " : "") +
+                (String(seconds) + "s")
+              ).c_str();
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: wifi_signal
+    id: wifi_signal_strength
+    name: WiFi Signal Strength
+    update_interval: ${diagnostics_update_interval}
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: template
+    id: sensor_wifi_signal_percentage
+    name: WiFi Signal Percentage
+    icon: mdi:wifi
+    unit_of_measurement: "%"
+    update_interval: ${diagnostics_update_interval}
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(wifi_signal_strength).state < -92.0)
+        return 100.0;
+      if (id(wifi_signal_strength).state > -21.0)
+        return 1.0;
+      else
+        return round(( -0.0154 * id(wifi_signal_strength).state * id(wifi_signal_strength).state ) - ( 0.3794 * id(wifi_signal_strength).state ) + 98.182 );
+    entity_category: diagnostic
+    disabled_by_default: true
+
+## ---------------------------------------------------
+## all text sensors
+## ---------------------------------------------------
+text_sensor:
+  - platform: version
+    name: Esphome Version
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: template
+    name: Uptime
+    id: uptime_human
+    icon: mdi:clock-start
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: wifi_info
+    ip_address:
+      name: IP
+      icon: mdi:ip-network
+    ssid:
+      name: SSID
+      icon: mdi:wifi
+    bssid:
+      name: BSSID
+      icon: mdi:wifi
+    mac_address:
+      name: Wifi Mac Address
+      icon: mdi:wifi
+  - platform: template
+    name: Timestamp
+    lambda: char str[20];
+      time_t currTime = id(sntp_time).now().timestamp;
+      strftime(str, sizeof(str), "%Y-%m-%dT%H:%M:%S", localtime(&currTime));
+      return (std::string) str;
+    entity_category: diagnostic
+    disabled_by_default: true
+  - platform: template
+    name: Uptime (formatted)
+    icon: mdi:clock-start
+    update_interval: 15s
+    lambda: |-
+      int seconds = (id(uptime_sensor).state);
+      int days = seconds / (24 * 3600);
+      seconds = seconds % (24 * 3600);
+      int hours = seconds / 3600;
+      seconds = seconds % 3600;
+      int minutes = seconds /  60;
+      seconds = seconds % 60;
+      if ( days ) {
+        return { (String(days) +"d " + String(hours) +"h " + String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else if ( hours ) {
+        return { (String(hours) +"h " + String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else if ( minutes ) {
+        return { (String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else {
+        return { (String(seconds) +"s").c_str() };
+      }
+    entity_category: diagnostic
+    disabled_by_default: true
