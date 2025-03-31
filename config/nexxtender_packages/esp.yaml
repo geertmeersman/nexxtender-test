@@ -10,9 +10,12 @@ esp32:
     sdkconfig_options:
       CONFIG_BT_GATTC_NOTIF_REG_MAX: "32"
 
+external_components:
+  - source: auto
+
 esphome:
   min_version: 2024.2.0
   name: ${device_name}
   friendly_name: ${friendly_name}
   includes:
-    - ../nexxtender_packages/nexxtender.h
+    - nexxtender_packages/nexxtender.h
