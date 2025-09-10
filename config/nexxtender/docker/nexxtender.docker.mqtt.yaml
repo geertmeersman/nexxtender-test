@@ -1,0 +1,4 @@
+packages:
+  docker: !include nexxtender.docker.common.yaml
+  network: !include nexxtender_packages/wifi.yaml
+  mqtt: !include nexxtender_packages/mqtt_true.yaml
