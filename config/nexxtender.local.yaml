@@ -1,5 +1,0 @@
-packages:
-  common: !include nexxtender_packages/common_packages.yaml
-  esphome: !include nexxtender_packages/esphome.local.yaml
-  network: !include nexxtender_packages/wifi.yaml
-  mqtt: !include nexxtender_packages/mqtt_false.yaml
