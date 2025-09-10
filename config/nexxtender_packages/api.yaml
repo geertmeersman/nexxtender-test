@@ -1,13 +1,13 @@
 # Define global variables that can be used anywhere in the configuration
 globals:
-  - id: g_wifi_connected        # Name/ID of the global variable
-    type: bool                  # Type: boolean (true/false)
-    initial_value: "false"      # Initial value when ESP starts
+  - id: g_wifi_connected # Name/ID of the global variable
+    type: bool # Type: boolean (true/false)
+    initial_value: "false" # Initial value when ESP starts
 
 # OTA (Over-the-Air) update configuration
 ota:
-  - platform: esphome           # Use the ESPHome OTA platform
-    password: !secret esphome_admin_password  # Password stored in secrets.yaml for security
+  - platform: esphome # Use the ESPHome OTA platform
+    password: !secret esphome_admin_password # Password stored in secrets.yaml for security
 
 # Logger component: logs messages to serial or over network
 logger:
@@ -15,6 +15,6 @@ logger:
 # API configuration for communication with Home Assistant or other controllers
 api:
   encryption:
-    key: !secret esphome_api_key    # Encryption key for secure API communication
-  id: espapi                        # Unique ID for this API instance
-  reboot_timeout: 5min              # Auto-reboot if API stops responding for 5 minutes
+    key: !secret esphome_api_key # Encryption key for secure API communication
+  id: espapi # Unique ID for this API instance
+  reboot_timeout: 5min # Auto-reboot if API stops responding for 5 minutes

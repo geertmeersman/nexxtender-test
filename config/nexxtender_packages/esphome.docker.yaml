@@ -5,4 +5,4 @@ esphome:
   includes:
     # Calculate the path using the calculate_esphome_package_path.py script
     # Path when running in a standalone docker setup
-    - .esphome/packages/caa06908/config/nexxtender_packages/nexxtender.h
+    - .esphome/packages/fe6cda15/config/nexxtender_packages/nexxtender.h
